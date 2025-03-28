@@ -1,0 +1,73 @@
+# =============================
+# 🔹 Global Ignore (Applies to All Folders)
+# =============================
+
+# Logs and Debugging
+logs/
+*.log
+npm-debug.log*
+pnpm-debug.log*
+yarn-debug.log*
+lerna-debug.log*
+
+# OS-Specific Files
+.DS_Store
+Thumbs.db
+
+# IDE and Editor Configs
+.vscode/
+.idea/
+.project
+.classpath
+*.launch
+.settings/
+*.sublime-workspace
+
+# Temp Files
+.temp/
+.tmp/
+pids/
+*.pid
+*.seed
+*.pid.lock
+
+# Environment Files
+.env
+
+# =============================
+# 🔹 Backend (NestJS) Ignore
+# =============================
+
+backend/node_modules/
+backend/dist/
+backend/build/
+backend/coverage/
+backend/.env
+backend/.env.local
+backend/.env.development.local
+backend/.env.test.local
+backend/.env.production.local
+# backend/prisma/migrations/
+backend/prisma/dev.db
+
+# =============================
+# 🔹 Frontend (Next.js) Ignore
+# =============================
+
+frontend/node_modules/
+frontend/.next/
+frontend/out/
+frontend/.env
+frontend/.env.local
+frontend/.env.development.local
+frontend/.env.test.local
+frontend/.env.production.local
+
+# =============================
+# 🔹 Database Ignore
+# =============================
+
+database/data/
+database/dumps/
+database/.env
+database/*.sql

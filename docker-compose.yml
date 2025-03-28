@@ -1,0 +1,53 @@
+services:
+    postgres:
+        image: postgres:15
+        container_name: postgres
+        restart: always
+        env_file:
+            - .env
+        ports:
+            - "6543:5432"
+        volumes:
+            - pgdata:/var/lib/postgresql/data
+
+    backend:
+        build: ./backend
+        container_name: backend
+        restart: always
+        depends_on:
+            - postgres
+        env_file:
+            - .env
+        ports:
+            - "3000:3000"
+        volumes:
+            - ./backend:/app
+            - /app/node_modules
+        # Use a custom command for development:
+        command:
+            [
+                "/bin/sh",
+                "-c",
+                "sleep 5 && npx prisma migrate deploy && npm run start:dev",
+            ]
+
+    frontend:
+        build: ./frontend
+        container_name: frontend
+        restart: always
+        depends_on:
+            - backend
+        env_file:
+            - .env
+        ports:
+            - "5173:5173"
+        volumes:
+            - ./frontend:/app
+            - /app/node_modules
+        environment:
+            - CHOKIDAR_USEPOLLING=true
+            - WATCHPACK_POLLING=true
+        command: ["npm", "run", "dev", "--", "-p", "5173", "-H", "0.0.0.0"]
+
+volumes:
+    pgdata:
