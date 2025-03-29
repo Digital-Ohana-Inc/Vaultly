@@ -18,11 +18,30 @@ model Shop {
   name String
   address String
   contactInfo String
-  location String?
+  logo String?
   hours String?
+  location String?
   policies String?
   planId String?
   createdAt DateTime @default(now())
   updatedAt DateTime @default(now())
   deletedAt DateTime?
+
+  // Relations
+  users User[]
+}
+
+model User {
+  id String @id @default(uuid())
+  shop_id String?
+  name String
+  email String @unique
+  password String
+  role String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now())
+  deletedAt DateTime?
+
+  // Relations
+  shop Shop? @relation(fields: [shop_id], references: [id])
 }
