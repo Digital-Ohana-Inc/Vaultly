@@ -74,26 +74,12 @@ export class AuthService {
   async getProfile(userId: string) {
     return this.prisma.user.findUnique({
       where: { id: userId },
-      select: {
-        id: true,
-        email: true,
-        name: true,
-        role: true,
-        createdAt: true,
-        updatedAt: true,
-        shop: {
-          select: {
-            id: true,
-            name: true,
-            address: true,
-            contactInfo: true,
-            logo: true,
-            hours: true,
-            location: true,
-            policies: true,
-            planId: true,
-          }
-        }
+      include: {
+        shopUsers: {
+          include: {
+            shop: true,
+          },
+        },
       },
     });
   }
@@ -101,41 +87,24 @@ export class AuthService {
   async updateProfile(userId: string, dto: UpdateUserDto) {
     const dataToUpdate: any = { ...dto };
 
-    // if password is provided, hash it
     if (dto.password) {
       dataToUpdate.password = await bcrypt.hash(dto.password, 10);
     }
 
-    const updatedUser = await this.prisma.user.update({
+    return this.prisma.user.update({
       where: { id: userId },
       data: {
         ...dataToUpdate,
         updatedAt: new Date(),
       },
-      select: {
-        id: true,
-        email: true,
-        name: true,
-        role: true,
-        createdAt: true,
-        updatedAt: true,
-        shop: {
-          select: {
-            id: true,
-            name: true,
-            address: true,
-            contactInfo: true,
-            logo: true,
-            hours: true,
-            location: true,
-            policies: true,
-            planId: true,
+      include: {
+        shopUsers: {
+          include: {
+            shop: true,
           },
         },
       },
     });
-
-    return updatedUser;
   }
 
   async deleteProfile(userId: string) {
@@ -145,49 +114,30 @@ export class AuthService {
         deletedAt: new Date(),
       },
     });
-  
+
     return { message: 'Account marked for deletion' };
   }
 
   async cancelDeletion(userId: string) {
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
-  
+
     if (!user || !user.deletedAt) {
       throw new BadRequestException('No deletion scheduled for this account.');
     }
-  
-    const restoredUser = await this.prisma.user.update({
+
+    return this.prisma.user.update({
       where: { id: userId },
       data: {
         deletedAt: null,
         updatedAt: new Date(),
       },
-      select: {
-        id: true,
-        email: true,
-        name: true,
-        role: true,
-        createdAt: true,
-        updatedAt: true,
-        shop: {
-          select: {
-            id: true,
-            name: true,
-            address: true,
-            contactInfo: true,
-            logo: true,
-            hours: true,
-            location: true,
-            policies: true,
-            planId: true,
+      include: {
+        shopUsers: {
+          include: {
+            shop: true,
           },
         },
       },
     });
-  
-    return restoredUser;
   }
-  
-  
-  
 }

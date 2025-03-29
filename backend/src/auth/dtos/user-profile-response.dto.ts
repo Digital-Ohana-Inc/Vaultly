@@ -30,6 +30,17 @@ class ShopProfileDto {
   planId?: string | null;
 }
 
+class ShopAssignmentDto {
+  @ApiProperty({ enum: Role })
+  role: Role;
+
+  @ApiProperty()
+  assignedAt: Date;
+
+  @ApiProperty({ type: ShopProfileDto })
+  shop: ShopProfileDto;
+}
+
 export class UserProfileResponseDto {
   @ApiProperty()
   id: string;
@@ -49,6 +60,6 @@ export class UserProfileResponseDto {
   @ApiProperty()
   updatedAt: Date;
 
-  @ApiProperty({ type: ShopProfileDto, required: false, nullable: true })
-  shop?: ShopProfileDto | null;
+  @ApiProperty({ type: [ShopAssignmentDto], required: false })
+  shopUsers: ShopAssignmentDto[];
 }
