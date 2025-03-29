@@ -1,18 +1,39 @@
-import { Body, Controller, Post, Res, UnauthorizedException, Req } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Body,
+  Get,
+  Req,
+  Res,
+  UseGuards,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { CreateUserDto } from '../users/dtos/create-user.dto';
 import { UserResponseDto } from '../users/dtos/user-response.dto';
-import { ApiBody, ApiCreatedResponse, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { UserProfileResponseDto } from './dtos/user-profile-response.dto';
 import { LoginDto } from './dtos/login.dto';
-import { Response, Request } from 'express';
+import { AuthGuard } from '@nestjs/passport';
+import { Request, Response } from 'express';
+import {
+  ApiBearerAuth,
+  ApiBody,
+  ApiCreatedResponse,
+  ApiOkResponse,
+  ApiOperation,
+  ApiResponse,
+  ApiTags,
+} from '@nestjs/swagger';
+import { CurrentUser } from 'src/common/decorators/current-user.decorator';
 
 @ApiTags('auth')
 @Controller('auth')
 export class AuthController {
-  constructor(private authService: AuthService) {}
+  constructor(private readonly authService: AuthService) {}
 
   @Post('register')
   @ApiCreatedResponse({ type: UserResponseDto })
+  @ApiOperation({ summary: 'Register a new user' })
   async register(@Body() dto: CreateUserDto): Promise<UserResponseDto> {
     return this.authService.register(dto);
   }
@@ -54,5 +75,21 @@ export class AuthController {
     });
 
     return res.json({ accessToken });
+  }
+
+  @Get('profile')
+  @UseGuards(AuthGuard('jwt'))
+  @ApiBearerAuth('access-token')
+  @ApiOperation({ summary: 'Get authenticated user profile' })
+  @ApiOkResponse({ type: UserProfileResponseDto })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  async getProfile(@CurrentUser() user: any): Promise<UserProfileResponseDto> {
+    const dbUser = await this.authService.getProfile(user.id);
+  
+    if (!dbUser) {
+      throw new UnauthorizedException('User not found');
+    }
+  
+    return dbUser;
   }
 }

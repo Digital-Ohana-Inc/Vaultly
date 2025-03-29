@@ -5,6 +5,7 @@ import * as bcrypt from 'bcryptjs';
 import { CreateUserDto } from '../users/dtos/create-user.dto';
 import { UsersService } from '../users/users.service';
 import { ConfigService } from '@nestjs/config';
+import { Role } from '@prisma/client';
 
 @Injectable()
 export class AuthService {
@@ -15,7 +16,7 @@ export class AuthService {
     private configService: ConfigService
   ) {}
 
-  private generateTokens(userId: string, email: string, role: string) {
+  private generateTokens(userId: string, email: string, role: Role) {
     const payload = { id: userId, email, roles: [role] };
 
     const accessToken = this.jwtService.sign(payload, {
@@ -67,5 +68,32 @@ export class AuthService {
     if (!isMatch) throw new BadRequestException('Invalid credentials');
 
     return this.generateTokens(user.id, user.email, user.role);
+  }
+
+  async getProfile(userId: string) {
+    return this.prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        role: true,
+        createdAt: true,
+        updatedAt: true,
+        shop: {
+          select: {
+            id: true,
+            name: true,
+            address: true,
+            contactInfo: true,
+            logo: true,
+            hours: true,
+            location: true,
+            policies: true,
+            planId: true,
+          }
+        }
+      },
+    });
   }
 }

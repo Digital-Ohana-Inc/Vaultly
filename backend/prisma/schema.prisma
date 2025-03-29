@@ -37,11 +37,16 @@ model User {
   name String
   email String @unique
   password String
-  role String
+  role Role @default(USER)
   createdAt DateTime @default(now())
   updatedAt DateTime @default(now())
   deletedAt DateTime?
 
   // Relations
   shop Shop? @relation(fields: [shop_id], references: [id])
+}
+
+enum Role {
+  USER
+  ADMIN
 }
