@@ -2,11 +2,11 @@ import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { ConfigService } from '@nestjs/config';
-import { JwtPayload } from '../types/jwt-payload.type';
 import { PrismaService } from 'src/prisma/prisma.service';
+import { JwtPayload } from '../types/jwt-payload.type';
 
 @Injectable()
-export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
+export class JwtSoftStrategy extends PassportStrategy(Strategy, 'jwt-soft') {
   constructor(
     config: ConfigService,
     private prisma: PrismaService,
@@ -22,12 +22,11 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
     const user = await this.prisma.user.findUnique({
       where: { id: payload.id },
     });
-  
-    if (!user || user.deletedAt) {
-      throw new UnauthorizedException('Access denied. Account is deleted.');
+
+    if (!user) {
+      throw new UnauthorizedException('Access denied.');
     }
-  
-    return user;
+
+    return user; // 👈 allow soft-deleted users
   }
-  
 }
