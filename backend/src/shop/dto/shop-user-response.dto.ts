@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { Role } from '@prisma/client';
+import { ShopRole } from '@prisma/client';
 
 class UserDto {
   @ApiProperty({ example: 'user_abc123' })
@@ -27,8 +27,8 @@ export class ShopUserResponseDto {
   @ApiProperty({ example: 'shusr_123456' })
   id: string;
 
-  @ApiProperty({ enum: Role, example: Role.USER })
-  role: Role;
+  @ApiProperty({ enum: ShopRole, example: ShopRole.SALES_REP })
+  role: ShopRole;
 
   @ApiProperty({ example: '2025-03-29T01:23:45.000Z' })
   assignedAt: Date;

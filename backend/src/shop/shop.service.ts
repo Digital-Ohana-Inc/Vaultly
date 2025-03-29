@@ -7,7 +7,7 @@ import { UpdateShopDto } from './dto/update-shop.dto';
 import { CreateShopDto } from './dto/create-shop.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { AssignUserToShopDto } from './dto/assign-user-to-shop.dto';
-import { Role } from '@prisma/client';
+import { Role, ShopRole } from '@prisma/client';
 
 @Injectable()
 export class ShopService {
@@ -34,7 +34,7 @@ export class ShopService {
       data: {
         userId,
         shopId: shop.id,
-        role: Role.ADMIN,
+        role: ShopRole.OWNER,
       },
     });
 
