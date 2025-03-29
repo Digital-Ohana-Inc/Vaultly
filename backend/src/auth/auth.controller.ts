@@ -3,6 +3,7 @@ import {
   Post,
   Body,
   Get,
+  Patch,
   Req,
   Res,
   UseGuards,
@@ -12,6 +13,7 @@ import { AuthService } from './auth.service';
 import { CreateUserDto } from '../users/dtos/create-user.dto';
 import { UserResponseDto } from '../users/dtos/user-response.dto';
 import { UserProfileResponseDto } from './dtos/user-profile-response.dto';
+import { UpdateUserDto } from 'src/users/dtos/update-user.dto';
 import { LoginDto } from './dtos/login.dto';
 import { AuthGuard } from '@nestjs/passport';
 import { Request, Response } from 'express';
@@ -91,5 +93,25 @@ export class AuthController {
     }
   
     return dbUser;
+  }
+
+  @Patch('profile')
+  @UseGuards(AuthGuard('jwt'))
+  @ApiBearerAuth('access-token')
+  @ApiOperation({ summary: 'Update authenticated user profile' })
+  @ApiOkResponse({ type: UserProfileResponseDto })
+  @ApiResponse({ status: 400, description: 'Validation error' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  async updateProfile(
+    @CurrentUser() user: any,
+    @Body() dto: UpdateUserDto,
+  ): Promise<UserProfileResponseDto> {
+    const updatedUser = await this.authService.updateProfile(user.id, dto);
+  
+    if (!updatedUser) {
+      throw new UnauthorizedException('User not found');
+    }
+  
+    return updatedUser;
   }
 }

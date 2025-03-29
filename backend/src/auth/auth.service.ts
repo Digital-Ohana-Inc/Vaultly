@@ -6,6 +6,7 @@ import { CreateUserDto } from '../users/dtos/create-user.dto';
 import { UsersService } from '../users/users.service';
 import { ConfigService } from '@nestjs/config';
 import { Role } from '@prisma/client';
+import { UpdateUserDto } from 'src/users/dtos/update-user.dto';
 
 @Injectable()
 export class AuthService {
@@ -95,5 +96,45 @@ export class AuthService {
         }
       },
     });
+  }
+
+  async updateProfile(userId: string, dto: UpdateUserDto) {
+    const dataToUpdate: any = { ...dto };
+
+    // if password is provided, hash it
+    if (dto.password) {
+      dataToUpdate.password = await bcrypt.hash(dto.password, 10);
+    }
+
+    const updatedUser = await this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        ...dataToUpdate,
+        updatedAt: new Date(),
+      },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        role: true,
+        createdAt: true,
+        updatedAt: true,
+        shop: {
+          select: {
+            id: true,
+            name: true,
+            address: true,
+            contactInfo: true,
+            logo: true,
+            hours: true,
+            location: true,
+            policies: true,
+            planId: true,
+          },
+        },
+      },
+    });
+
+    return updatedUser;
   }
 }
