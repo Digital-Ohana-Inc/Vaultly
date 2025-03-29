@@ -5,7 +5,7 @@ import * as bcrypt from 'bcryptjs';
 import { CreateUserDto } from '../users/dtos/create-user.dto';
 import { UsersService } from '../users/users.service';
 import { ConfigService } from '@nestjs/config';
-import { Role } from '@prisma/client';
+import { Role, ShopRole } from '@prisma/client';
 import { UpdateUserDto } from 'src/users/dtos/update-user.dto';
 
 @Injectable()
@@ -31,6 +31,18 @@ export class AuthService {
     });
 
     return { accessToken, refreshToken };
+  }
+
+  private async getOwnedShopIds(userId: string): Promise<string[]> {
+    const shopUsers = await this.prisma.shopUser.findMany({
+      where: {
+        userId,
+        role: ShopRole.OWNER,
+      },
+      select: { shopId: true },
+    });
+
+    return shopUsers.map((s) => s.shopId);
   }
 
   async refreshUserToken(refreshToken: string) {
@@ -108,6 +120,8 @@ export class AuthService {
   }
 
   async deleteProfile(userId: string) {
+    const ownedShopIds = await this.getOwnedShopIds(userId);
+
     await this.prisma.user.update({
       where: { id: userId },
       data: {
@@ -115,7 +129,14 @@ export class AuthService {
       },
     });
 
-    return { message: 'Account marked for deletion' };
+    if (ownedShopIds.length > 0) {
+      await this.prisma.shop.updateMany({
+        where: { id: { in: ownedShopIds } },
+        data: { deletedAt: new Date() },
+      });
+    }
+
+    return { message: 'Account and owned shops marked for deletion' };
   }
 
   async cancelDeletion(userId: string) {
@@ -125,7 +146,7 @@ export class AuthService {
       throw new BadRequestException('No deletion scheduled for this account.');
     }
 
-    return this.prisma.user.update({
+    const updatedUser = await this.prisma.user.update({
       where: { id: userId },
       data: {
         deletedAt: null,
@@ -139,5 +160,39 @@ export class AuthService {
         },
       },
     });
+
+    const ownedShopIds = await this.getOwnedShopIds(userId);
+    if (ownedShopIds.length > 0) {
+      await this.prisma.shop.updateMany({
+        where: { id: { in: ownedShopIds } },
+        data: { deletedAt: null, updatedAt: new Date() },
+      });
+    }
+
+    return updatedUser;
+  }
+
+  async hardDeleteUser(userId: string) {
+    const ownedShopIds = await this.getOwnedShopIds(userId);
+
+    if (ownedShopIds.length > 0) {
+      await this.prisma.shopUser.deleteMany({
+        where: { shopId: { in: ownedShopIds } },
+      });
+
+      await this.prisma.shop.deleteMany({
+        where: { id: { in: ownedShopIds } },
+      });
+    }
+
+    await this.prisma.shopUser.deleteMany({
+      where: { userId },
+    });
+
+    await this.prisma.user.delete({
+      where: { id: userId },
+    });
+
+    return { message: 'User and all owned shops permanently deleted' };
   }
 }

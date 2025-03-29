@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { Role } from '@prisma/client';
+import { Role, ShopRole } from '@prisma/client';
 
 class ShopProfileDto {
   @ApiProperty()
@@ -30,36 +30,30 @@ class ShopProfileDto {
   planId?: string | null;
 }
 
-class ShopAssignmentDto {
-  @ApiProperty({ enum: Role })
-  role: Role;
+export class ShopAssignmentDto {
+  @ApiProperty({ example: 'shop_123456' })
+  shopId: string;
 
-  @ApiProperty()
-  assignedAt: Date;
+  @ApiProperty({ example: 'Vaultly Card Shop' })
+  shopName: string;
 
-  @ApiProperty({ type: ShopProfileDto })
-  shop: ShopProfileDto;
+  @ApiProperty({ enum: ShopRole, example: ShopRole.SALES_REP })
+  role: ShopRole;
 }
 
 export class UserProfileResponseDto {
-  @ApiProperty()
+  @ApiProperty({ example: 'user_abc123' })
   id: string;
 
-  @ApiProperty()
+  @ApiProperty({ example: 'johndoe@example.com' })
   email: string;
 
-  @ApiProperty()
+  @ApiProperty({ example: 'John Doe' })
   name: string;
 
-  @ApiProperty({ enum: Role })
+  @ApiProperty({ enum: Role, example: Role.USER })
   role: Role;
 
-  @ApiProperty()
-  createdAt: Date;
-
-  @ApiProperty()
-  updatedAt: Date;
-
-  @ApiProperty({ type: [ShopAssignmentDto], required: false })
+  @ApiProperty({ type: [ShopAssignmentDto] })
   shopUsers: ShopAssignmentDto[];
 }

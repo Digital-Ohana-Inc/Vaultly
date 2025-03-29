@@ -9,6 +9,8 @@ import {
   UseGuards,
   UnauthorizedException,
   Delete,
+  Param,
+  ForbiddenException,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { CreateUserDto } from '../users/dtos/create-user.dto';
@@ -88,12 +90,22 @@ export class AuthController {
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   async getProfile(@CurrentUser() user: any): Promise<UserProfileResponseDto> {
     const dbUser = await this.authService.getProfile(user.id);
-  
+
     if (!dbUser) {
       throw new UnauthorizedException('User not found');
     }
-  
-    return dbUser;
+
+    return {
+      id: dbUser.id,
+      name: dbUser.name,
+      email: dbUser.email,
+      role: dbUser.role,
+      shopUsers: dbUser.shopUsers.map((su) => ({
+        shopId: su.shop.id,
+        shopName: su.shop.name,
+        role: su.role,
+      })),
+    };
   }
 
   @Patch('profile')
@@ -108,12 +120,22 @@ export class AuthController {
     @Body() dto: UpdateUserDto,
   ): Promise<UserProfileResponseDto> {
     const updatedUser = await this.authService.updateProfile(user.id, dto);
-  
+
     if (!updatedUser) {
       throw new UnauthorizedException('User not found');
     }
-  
-    return updatedUser;
+
+    return {
+      id: updatedUser.id,
+      name: updatedUser.name,
+      email: updatedUser.email,
+      role: updatedUser.role,
+      shopUsers: updatedUser.shopUsers.map((su) => ({
+        shopId: su.shop.id,
+        shopName: su.shop.name,
+        role: su.role,
+      })),
+    };
   }
 
   @Delete('profile')
@@ -121,14 +143,30 @@ export class AuthController {
   @ApiBearerAuth('access-token')
   @ApiOperation({ summary: 'Soft delete authenticated user' })
   @ApiResponse({ status: 200, description: 'User soft-deleted and logged out' })
-  async deleteProfile(
-    @CurrentUser() user: any,
-    @Res() res: Response,
-  ) {
+  async deleteProfile(@CurrentUser() user: any, @Res() res: Response) {
     await this.authService.deleteProfile(user.id);
-  
+
     res.clearCookie('refresh_token');
-    return res.status(200).json({ message: 'Your account has been deleted. You have been logged out.' });
+    return res
+      .status(200)
+      .json({ message: 'Your account has been deleted. You have been logged out.' });
+  }
+
+  @Delete('hard-delete/:id')
+  @UseGuards(AuthGuard('jwt'))
+  @ApiBearerAuth('access-token')
+  @ApiOperation({ summary: 'Hard delete a user and their owned shops (admin only)' })
+  @ApiResponse({ status: 200, description: 'User and shops permanently deleted' })
+  @ApiResponse({ status: 403, description: 'Forbidden' })
+  async hardDeleteUser(
+    @CurrentUser() user: any,
+    @Param('id') userIdToDelete: string,
+  ) {
+    if (user.role !== 'ADMIN') {
+      throw new ForbiddenException('Only admins can perform hard deletes.');
+    }
+
+      return this.authService.hardDeleteUser(userIdToDelete);
   }
 
   @UseGuards(AuthGuard('jwt-soft'))
@@ -139,9 +177,19 @@ export class AuthController {
   @ApiResponse({ status: 400, description: 'No deletion scheduled' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   async cancelDeletion(@CurrentUser() user: any): Promise<UserProfileResponseDto> {
-    return this.authService.cancelDeletion(user.id);
+    const updatedUser = await this.authService.cancelDeletion(user.id);
+
+    return {
+      id: updatedUser.id,
+      name: updatedUser.name,
+      email: updatedUser.email,
+      role: updatedUser.role,
+      shopUsers: updatedUser.shopUsers.map((su) => ({
+        shopId: su.shop.id,
+        shopName: su.shop.name,
+        role: su.role,
+      })),
+    };
   }
-  
-  
-    
+
 }

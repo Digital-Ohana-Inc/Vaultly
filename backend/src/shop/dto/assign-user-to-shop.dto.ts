@@ -1,5 +1,5 @@
 import { IsUUID, IsEnum } from 'class-validator';
-import { Role } from '@prisma/client';
+import { ShopRole } from '@prisma/client';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class AssignUserToShopDto {
@@ -18,10 +18,10 @@ export class AssignUserToShopDto {
   shopId: string;
 
   @ApiProperty({
-    enum: Role,
-    example: Role.USER,
-    description: 'Role of the user in the shop',
+    enum: ShopRole,
+    example: ShopRole.SALES_REP,
+    description: 'Shop-level role to assign',
   })
-  @IsEnum(Role)
-  role: Role;
+  @IsEnum(ShopRole)
+  role: ShopRole;
 }
