@@ -137,4 +137,57 @@ export class AuthService {
 
     return updatedUser;
   }
+
+  async deleteProfile(userId: string) {
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        deletedAt: new Date(),
+      },
+    });
+  
+    return { message: 'Account marked for deletion' };
+  }
+
+  async cancelDeletion(userId: string) {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+  
+    if (!user || !user.deletedAt) {
+      throw new BadRequestException('No deletion scheduled for this account.');
+    }
+  
+    const restoredUser = await this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        deletedAt: null,
+        updatedAt: new Date(),
+      },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        role: true,
+        createdAt: true,
+        updatedAt: true,
+        shop: {
+          select: {
+            id: true,
+            name: true,
+            address: true,
+            contactInfo: true,
+            logo: true,
+            hours: true,
+            location: true,
+            policies: true,
+            planId: true,
+          },
+        },
+      },
+    });
+  
+    return restoredUser;
+  }
+  
+  
+  
 }

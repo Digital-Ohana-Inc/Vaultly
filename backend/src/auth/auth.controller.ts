@@ -8,6 +8,7 @@ import {
   Res,
   UseGuards,
   UnauthorizedException,
+  Delete,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { CreateUserDto } from '../users/dtos/create-user.dto';
@@ -114,4 +115,33 @@ export class AuthController {
   
     return updatedUser;
   }
+
+  @Delete('profile')
+  @UseGuards(AuthGuard('jwt'))
+  @ApiBearerAuth('access-token')
+  @ApiOperation({ summary: 'Soft delete authenticated user' })
+  @ApiResponse({ status: 200, description: 'User soft-deleted and logged out' })
+  async deleteProfile(
+    @CurrentUser() user: any,
+    @Res() res: Response,
+  ) {
+    await this.authService.deleteProfile(user.id);
+  
+    res.clearCookie('refresh_token');
+    return res.status(200).json({ message: 'Your account has been deleted. You have been logged out.' });
+  }
+
+  @UseGuards(AuthGuard('jwt-soft'))
+  @Post('cancel-deletion')
+  @ApiBearerAuth('access-token')
+  @ApiOperation({ summary: 'Cancel scheduled account deletion' })
+  @ApiOkResponse({ type: UserProfileResponseDto })
+  @ApiResponse({ status: 400, description: 'No deletion scheduled' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  async cancelDeletion(@CurrentUser() user: any): Promise<UserProfileResponseDto> {
+    return this.authService.cancelDeletion(user.id);
+  }
+  
+  
+    
 }
