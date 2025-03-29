@@ -4,29 +4,49 @@ import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcryptjs';
 import { CreateUserDto } from '../users/dtos/create-user.dto';
 import { UsersService } from '../users/users.service';
+import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class AuthService {
   constructor(
     private prisma: PrismaService,
     private jwtService: JwtService,
-    private usersService: UsersService
+    private usersService: UsersService,
+    private configService: ConfigService
   ) {}
 
   private generateTokens(userId: string, email: string, role: string) {
     const payload = { id: userId, email, roles: [role] };
 
     const accessToken = this.jwtService.sign(payload, {
-      secret: process.env.JWT_SECRET!,
+      secret: this.configService.get('JWT_SECRET'),
       expiresIn: '1h',
     });
 
     const refreshToken = this.jwtService.sign(payload, {
-      secret: process.env.JWT_SECRET!, // use REFRESH_SECRET later if separate
+      secret: this.configService.get('REFRESH_SECRET'),
       expiresIn: '7d',
     });
 
     return { accessToken, refreshToken };
+  }
+
+  async refreshUserToken(refreshToken: string) {
+    try {
+      const payload = this.jwtService.verify(refreshToken, {
+        secret: this.configService.get('REFRESH_SECRET'),
+      });
+
+      const user = await this.prisma.user.findUnique({
+        where: { id: payload.id },
+      });
+
+      if (!user) throw new NotFoundException('User not found.');
+
+      return this.generateTokens(user.id, user.email, user.role);
+    } catch (error) {
+      throw new BadRequestException('Invalid or expired refresh token.');
+    }
   }
 
   async register(dto: CreateUserDto) {
